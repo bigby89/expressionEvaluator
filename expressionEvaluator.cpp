@@ -51,9 +51,8 @@ int isValidExpression(const char* expression)
         case '/':
             operatorCount++; // Increment count for operators
             // allow fallthrough to check next character
-
-        // Check for valid whitespaces
-        case ' ':
+            [[fallthrough]];
+		case ' ': // Check for valid whitespaces
         case '\t':
         case '\n':
         case '\r':

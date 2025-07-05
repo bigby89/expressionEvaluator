@@ -11,10 +11,13 @@
 #include <iostream>
 using namespace std;
 
-// Function pointer types for the isValidExpression test function
+// Function pointer type for the isValidExpression function
 typedef int (*IsValidExpressionFunction)(const char*);
+// Function pointer type for the Parse function
 typedef int (*ParseFunction)(const char*&, int&);
+// Function pointer type for the SkipSpaces function
 typedef void (*SkipSpacesFunction)(const char*&);
+// Function pointer type for the evaluate function
 typedef int (*EvaluateFunction)(const char*, int&);
 
 // Overloaded runTests function for isValidExpression function
