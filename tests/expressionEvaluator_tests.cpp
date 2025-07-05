@@ -12,6 +12,7 @@ using namespace std;
 
 // Function pointer types for the isValidExpression test function
 typedef int (*IsValidExpressionFunction)(const char*);
+typedef int (*ParseFunction)(const char*&, int&);
 
 // Constants for test data used in the expression evaluator tests
 namespace testData {
@@ -60,6 +61,31 @@ int runTests(IsValidExpressionFunction func, char* title, int iter) {
     return ERROR::SUCCESS;
 }
 
+// Overloaded runTests function for parse function
+int runTests(ParseFunction func, char* title, int iter) {
+    cout << endl << "----------------------------------------" << endl;
+    cout << "Running test: " << title << endl;
+    cout << "----------------------------------------" << endl;
+    for (size_t i = 0; i < iter; ++i) {
+        const char* expression = testData::getValidExpressions(i);
+        int expectedResult = testData::getExpectedResults(i);
+        const char* currentChar = expression;
+        int result = 0;
+
+        // Check if the function parses the expression successfully
+        if (func(currentChar, result) == ERROR::SUCCESS && result == expectedResult && *currentChar == '\0') {
+            cout << "Test " << i + 1 << ": '" << expression << "' parsed successfully with result: "
+                << result << endl;
+        }
+        else {
+            cout << "Test " << i + 1 << ": '" << expression << "' failed. Expected: "
+                << expectedResult << ", Got: " << result << endl;
+            return ERROR::PARSE_ERROR;
+        }
+    }
+    return ERROR::SUCCESS;
+}
+
 
 // This is the main function that runs all the tests
 int main(int, char**) {  
@@ -79,6 +105,14 @@ int main(int, char**) {
         return ERROR::PARSE_ERROR;
     }
 
+    // Tests for parse
+    if (runTests(parse, "Test Parse Expressions", testData::NUM_TEST_EXPRESSIONS) == ERROR::SUCCESS) {
+        cout << "All parse tests passed successfully!" << endl;
+    }
+    else {
+        cout << "Some parse tests failed." << endl;
+        return ERROR::PARSE_ERROR;
+    }
     
     // Final message indicating all tests passed successfully
 	cout << endl;

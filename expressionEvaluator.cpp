@@ -77,6 +77,164 @@ int isValidExpression(const char* expression)
     }
 }
 
+// Parses a parenthesis in the expression.
+// This function takes a sign (1 for positive, -1 for negative), a reference to a character pointer, 
+// and an integer reference to store the result.
+int parseParen(const char*& expression, int& result) {
+
+    // Move past the opening parenthesis
+    ++expression;
+
+    int parenValue = 0;
+
+    // Parse the expression inside the parentheses
+    int err = parse(expression, parenValue);
+
+    // If there was an error, return it
+    if (err) return err;
+
+    // Skip any spaces after the expression inside parentheses
+    while (*expression == ' ') {
+        ++expression; // Move to the next character
+    }
+
+    // Ensure the next character is a closing parenthesis
+    if (*expression != ')') return ERROR::MISSING_PAREN; // Missing closing parenthesis
+
+    // Move past the closing parenthesis
+    ++expression;
+
+    // Set the result to the parsed value with the correct sign
+    result = parenValue;
+
+    // If we reach here, we successfully parsed a parenthesis
+    return ERROR::SUCCESS;
+}
+
+
+// Parses the entire expression and returns the result as an integer.
+// This function takes a reference to a character pointer and returns the result of the expression.
+int parse(const char*& expression, int& result) {
+
+	// Initialize the leftValue to 0
+    int leftValue = 0;
+
+    // Skip any leading spaces
+    while (*expression == ' ') {
+        ++expression; // Move to the next character
+    }
+
+    // If the current character is an opening parenthesis, we need to parse the expression inside it.
+    if (*expression == '(') parseParen(expression, result); // Parse the expression inside parentheses
+    // If we encounter a closing parenthesis without a matching opening one, it's an error
+    else if (*expression == ')') return ERROR::UNMATCHED_PAREN; // Closing parenthesis without matching opening
+    // If the current character is not a digit or a parethesis, it must be an invalid operator or character
+    else if (*expression < '0' || *expression > '9') return ERROR::INVALID_CHARACTER; // Invalid character in expression
+    else {
+        // Parse the number
+        int val = 0;
+
+        // This loop will parse the digits of the number, ensuring we handle multi-digit numbers correctly
+        while (*expression >= '0' && *expression <= '9') val = val * 10 + (*expression++ - '0');
+
+        // After parsing the number, we set the leftValue to the value with the correct sign
+        leftValue = val;
+    }
+
+    // Now we will parse the rest of the expression
+    while (true) {
+
+        // Skip spaces before the operator
+        while (*expression == ' ') {
+            ++expression; // Move to the next character
+        }
+        char operation = *expression;
+
+        // If the next operation is not a valid operator, we break out of the loop
+        if (operation != '*' && operation != '/' && operation != '+' && operation != '-') break;
+
+        // If we reach here, we have a valid operator, so we move to the next character
+        ++expression;
+
+        // We now need to parse the right-hand side of the expression
+        int rightValue = 0;
+
+        // Skip any leading spaces
+        while (*expression == ' ') {
+            ++expression; // Move to the next character
+        }
+
+        // If the current character is an opening parenthesis, we need to parse the expression inside it.
+        if (*expression == '(') parseParen(expression, result); // Parse the expression inside parentheses
+        // If we encounter a closing parenthesis without a matching opening one, it's an error
+        else if (*expression == ')') return ERROR::UNMATCHED_PAREN; // Closing parenthesis without matching opening
+        // If the current character is not a digit or a parethesis, it must be an invalid operator or character
+        else if (*expression < '0' || *expression > '9') return ERROR::INVALID_CHARACTER; // Invalid character in expression
+        else {
+            // Parse the number
+            int val = 0;
+
+            // This loop will parse the digits of the number, ensuring we handle multi-digit numbers correctly
+            while (*expression >= '0' && *expression <= '9') val = val * 10 + (*expression++ - '0');
+
+            // After parsing the number, we set the leftValue to the value with the correct sign
+            rightValue = val;
+        }
+
+        // Now we can perform the operation on the left and right values
+        // We will handle multiplication and division first, as they have higher precedence
+        while (operation == '*' || operation == '/') {
+            if (operation == '*') leftValue *= rightValue;
+            else {
+                if (rightValue == 0) return ERROR::DIV_BY_ZERO; // Division by zero error
+                leftValue /= rightValue;
+            }
+
+            // After handling multiplication or division, we need to check for the next operator
+            while (*expression == ' ') {
+                ++expression; // Move to the next character
+            }
+            operation = *expression;
+
+            // If the next operation is not a valid operator, we break out of the loop
+            if (operation != '*' && operation != '/') break;
+
+            // If we reach here, we have a valid operator, so we move to the next character
+            ++expression;
+
+            // Skip any leading spaces
+            while (*expression == ' ') {
+                ++expression; // Move to the next character
+            }
+
+            // If the current character is an opening parenthesis, we need to parse the expression inside it.
+            if (*expression == '(') parseParen(expression, result); // Parse the expression inside parentheses
+            // If we encounter a closing parenthesis without a matching opening one, it's an error
+            else if (*expression == ')') return ERROR::UNMATCHED_PAREN; // Closing parenthesis without matching opening
+            // If the current character is not a digit or a parethesis, it must be an invalid operator or character
+            else if (*expression < '0' || *expression > '9') return ERROR::INVALID_CHARACTER; // Invalid character in expression
+            else {
+                // Parse the number
+                int val = 0;
+
+                // This loop will parse the digits of the number, ensuring we handle multi-digit numbers correctly
+                while (*expression >= '0' && *expression <= '9') val = val * 10 + (*expression++ - '0');
+
+                // After parsing the number, we set the leftValue to the value with the correct sign
+                rightValue = val;
+            }
+        }
+
+        // Now we handle addition and subtraction, which have lower precedence
+        if (operation == '+') leftValue += rightValue;
+        else if (operation == '-') leftValue -= rightValue;
+    }
+
+    // If we reach here, the expression was successfully parsed
+    result = leftValue;
+    return ERROR::SUCCESS;
+}
+
 
 // This function evaluates the expression and returns the result in 'result'.
 // It returns true if the expression is valid and false otherwise.
