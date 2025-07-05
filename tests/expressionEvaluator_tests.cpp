@@ -7,6 +7,7 @@
  // Include necessary headers
 #include "../expressionEvaluator.hpp"
 #include "../constants.hpp"
+#include "testData.hpp"
 #include <iostream>
 using namespace std;
 
@@ -16,72 +17,33 @@ typedef int (*ParseFunction)(const char*&, int&);
 typedef void (*SkipSpacesFunction)(const char*&);
 typedef int (*EvaluateFunction)(const char*, int&);
 
-// Constants for test data used in the expression evaluator tests
-namespace testData {
-
-    // Constants for the number of test expressions and spaces
-    static const size_t NUM_TEST_EXPRESSIONS = 8;
-    static const size_t NUM_TEST_SPACES = 20;
-
-    // Function to get a valid expression by index
-    static const char* getValidExpressions(size_t index) {
-        static const char* expressions[] = {
-            "1 + 2",
-            "3 - 4",
-            "5 *     6",
-            "7",
-            "9 + (10 - 11)      ",
-            "(12 * 13) + (14 / 15)",
-            "- 16 + 17",
-            "(18 - -19)"
-        };
-        return expressions[index];
-    }
-
-    // Function to get the expected result for a valid expression by index
-    static const int getExpectedResults(size_t index) {
-        static const int expectedResults[] = { 3, -1, 30, 7, 8, 156, 1, 37 };
-        return expectedResults[index];
-    }
-
-    // Function to get the expected result for an invalid expression by index
-    static const char* getTestSpaces(size_t index) {
-
-        static const char* spaces[] = {
-            " ", "  ", "   ", "    ", "     ",  // 1 to 5 spaces
-            "\t", "\n", "\r", "\f", "\v",       // 1 space with different whitespace characters
-            " \t", " \n", " \r", " \f", " \v",  // 2 spaces with leading space and different whitespace characters
-            "\t ", "\n ", "\r ", "\f ", "\v "   // 2 spaces with trailing space and different whitespace characters
-        };
-        return spaces[index];
-    }
-
-    // Function to get the expected number of spaces for a given index
-    static const int getExpectedSpaces(size_t index) {
-        static const int expectedSpaces[] = {
-            1, 2, 3, 4, 5,
-            1, 1, 1, 1, 1,
-            2, 2, 2, 2, 2,
-            2, 2, 2, 2, 2
-        };
-        return expectedSpaces[index];
-    }
-}
-
 // Overloaded runTests function for isValidExpression function
-int runTests(IsValidExpressionFunction func, char* title, int iter) {
+int runTests(IsValidExpressionFunction func, char* title, int iter, bool isValidTest) {
     cout << endl << "----------------------------------------" << endl;
     cout << "Running test: " << title << endl;
     cout << "----------------------------------------" << endl;
     for (size_t i = 0; i < iter; ++i) {
-        const char* expression = testData::getValidExpressions(i);
-        // Check if the function evaluates the expression successfully
-        if (func(expression) == ERROR::SUCCESS) {
-            cout << "Test " << i + 1 << ": '" << expression << "' is valid." << endl;
+        if (isValidTest) {
+            const char* expression = testData::getValidExpressions(i);
+            // Check if the function evaluates the expression successfully
+            if (func(expression) == ERROR::SUCCESS) {
+                cout << "Test " << i + 1 << ": '" << expression << "' is valid." << endl;
+            }
+            else {
+                cout << "Test " << i + 1 << ": '" << expression << "' is invalid." << endl;
+                return ERROR::PARSE_ERROR;
+            }
         }
         else {
-            cout << "Test " << i + 1 << ": '" << expression << "' is invalid." << endl;
-            return ERROR::PARSE_ERROR;
+            const char* expression = testData::getInvalidExpressions(i);
+            // Check if the function evaluates the expression successfully
+            if (func(expression) != ERROR::SUCCESS) {
+                cout << "Test " << i + 1 << ": '" << expression << "' is invalid as expected." << endl;
+            }
+            else {
+                cout << "Test " << i + 1 << ": '" << expression << "' is valid, but it should be invalid." << endl;
+                return ERROR::PARSE_ERROR;
+            }
         }
     }
     return ERROR::SUCCESS;
@@ -170,11 +132,19 @@ int main(int, char**) {
     cout << "----------------------------------------" << endl;
 
     // Tests for valid expressions
-    if (runTests(isValidExpression, "Test isValidExpression()", testData::NUM_TEST_EXPRESSIONS) == ERROR::SUCCESS) {
-        cout << "All tests passed successfully!" << endl;
+    if (runTests(isValidExpression, "Test Valid Expressions", testData::NUM_TEST_EXPRESSIONS, 1) == ERROR::SUCCESS) {
+        cout << "All valid expression tests passed successfully!" << endl;
     }
     else {
-        cout << "Some tests failed." << endl;
+        cout << "Some valid expression tests failed." << endl;
+        return ERROR::PARSE_ERROR;
+    }
+    // Tests for invalid expressions
+    if (runTests(isValidExpression, "Test Invalid Expressions", testData::NUM_TEST_EXPRESSIONS, 0) == ERROR::SUCCESS) {
+        cout << "All invalid expression tests passed successfully!" << endl;
+    }
+    else {
+        cout << "Some invalid expression tests failed." << endl;
         return ERROR::PARSE_ERROR;
     }
 
