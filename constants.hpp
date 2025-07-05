@@ -17,5 +17,6 @@ namespace ERROR
 	static const int INVALID_CHARACTER = 3; // Error code for invalid character in the expression
 	static const int DIV_BY_ZERO = 4; // Error code for division by zero
 	static const int MISSING_PAREN = 5; // Error code for missing closing parenthesis
-
+	static const int NO_NUM = 6; // Error code for no numbers found in the expression
+	static const int NO_OPERATOR = 7; // Error code for no operators found in the expressio
 }

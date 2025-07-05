@@ -19,7 +19,7 @@ int isValidExpression(const char* expression)
     {
         return false; // Empty expression is not valid
     }
-
+    
     // We need to count the components as we parse the expression
     int openParenCount = 0;      // Count of open parentheses
     int closeParenCount = 0;     // Count of close parentheses
@@ -39,7 +39,8 @@ int isValidExpression(const char* expression)
             continue; // Valid digit, continue checking
         }
 
-        // If we reach here, the character is not a digit, so we check for operators and parentheses
+		// If we reach here, the character is not a digit, so we check for operators, 
+        // whitespace, or parentheses
         switch (*ch)
         {
 
@@ -51,8 +52,13 @@ int isValidExpression(const char* expression)
             operatorCount++; // Increment count for operators
             // allow fallthrough to check next character
 
-        // Check for whitespaces
+        // Check for valid whitespaces
         case ' ':
+        case '\t':
+        case '\n':
+        case '\r':
+        case '\f':
+        case '\v':
             ch++;     // Move to next character
             continue; // Valid character, continue checking
 
@@ -75,12 +81,29 @@ int isValidExpression(const char* expression)
             return ERROR::INVALID_CHARACTER; // Invalid character found
         }
     }
+
+    // After checking all characters, we need to ensure the expression is valid and balanced
+    if (openParenCount != closeParenCount) return ERROR::UNMATCHED_PAREN; // Unmatched parentheses
+    else if (numCount == 0) return ERROR::NO_NUM; // No numbers found in the expression
+    else if (operatorCount == 0 && numCount > 1) return ERROR::NO_OPERATOR; // More than one number without an operator
+
+    // If we reach here, the expression is valid
+    return ERROR::SUCCESS;
+}
+
+// Skips spaces in the expression
+// This function takes a reference to a character pointer and skips any whitespace characters.
+void skipSpaces(const char*& currentChar) {
+    while (*currentChar == ' ' || *currentChar == '\t' || *currentChar == '\n' ||
+        *currentChar == '\r' || *currentChar == '\f' || *currentChar == '\v') {
+        ++currentChar; // Move to the next character
+    }
 }
 
 // Parses a parenthesis in the expression.
 // This function takes a sign (1 for positive, -1 for negative), a reference to a character pointer, 
 // and an integer reference to store the result.
-int parseParen(const char*& expression, int& result) {
+int parseParen(int sign, const char*& expression, int& result) {
 
     // Move past the opening parenthesis
     ++expression;
@@ -94,9 +117,7 @@ int parseParen(const char*& expression, int& result) {
     if (err) return err;
 
     // Skip any spaces after the expression inside parentheses
-    while (*expression == ' ') {
-        ++expression; // Move to the next character
-    }
+    skipSpaces(expression);
 
     // Ensure the next character is a closing parenthesis
     if (*expression != ')') return ERROR::MISSING_PAREN; // Missing closing parenthesis
@@ -105,30 +126,28 @@ int parseParen(const char*& expression, int& result) {
     ++expression;
 
     // Set the result to the parsed value with the correct sign
-    result = parenValue;
+    result = sign * parenValue;
 
     // If we reach here, we successfully parsed a parenthesis
     return ERROR::SUCCESS;
+
 }
 
-
-// Parses the entire expression and returns the result as an integer.
-// This function takes a reference to a character pointer and returns the result of the expression.
-int parse(const char*& expression, int& result) {
-
-	// Initialize the leftValue to 0
-    int leftValue = 0;
+// Parses the next number or recurcively parses a parenthesis in the expression.
+// This function takes a reference to a character pointer and an integer reference to store the result.
+int parseNext(const char*& expression, int& result) {
 
     // Skip any leading spaces
-    while (*expression == ' ') {
-        ++expression; // Move to the next character
-    }
+    skipSpaces(expression);
+
+    int sign = 1; // Default sign is positive
+    if (*expression == '-') { sign = -1; ++expression; skipSpaces(expression); } // Handle negative sign
 
     // If the current character is an opening parenthesis, we need to parse the expression inside it.
-    if (*expression == '(') parseParen(expression, result); // Parse the expression inside parentheses
+    if (*expression == '(') return parseParen(sign, expression, result); // Parse the expression inside parentheses
     // If we encounter a closing parenthesis without a matching opening one, it's an error
     else if (*expression == ')') return ERROR::UNMATCHED_PAREN; // Closing parenthesis without matching opening
-    // If the current character is not a digit or a parethesis, it must be an invalid operator or character
+    // If the current character is not a digit, it must be an invalid operator or character
     else if (*expression < '0' || *expression > '9') return ERROR::INVALID_CHARACTER; // Invalid character in expression
     else {
         // Parse the number
@@ -137,17 +156,35 @@ int parse(const char*& expression, int& result) {
         // This loop will parse the digits of the number, ensuring we handle multi-digit numbers correctly
         while (*expression >= '0' && *expression <= '9') val = val * 10 + (*expression++ - '0');
 
-        // After parsing the number, we set the leftValue to the value with the correct sign
-        leftValue = val;
+        // After parsing the number, we set the result to the value with the correct sign
+        result = sign * val;
     }
+
+    // After parsing the number, skip any spaces
+    skipSpaces(expression);
+
+    // If we reach here, we successfully parsed a number or a parenthesis
+    return ERROR::SUCCESS;
+}
+
+// Parses the entire expression and returns the result as an integer.
+// This function takes a reference to a character pointer and returns the result of the expression.
+int parse(const char*& expression, int& result) {
+
+    // Skip any leading spaces
+    skipSpaces(expression);
+
+    // Parse the left-hand side of the expression
+    int leftValue = 0, errorCode = parseNext(expression, leftValue);
+
+    // If there was an error parsing the left-hand side, return it
+    if (errorCode) return errorCode;
 
     // Now we will parse the rest of the expression
     while (true) {
 
         // Skip spaces before the operator
-        while (*expression == ' ') {
-            ++expression; // Move to the next character
-        }
+        skipSpaces(expression);
         char operation = *expression;
 
         // If the next operation is not a valid operator, we break out of the loop
@@ -157,29 +194,10 @@ int parse(const char*& expression, int& result) {
         ++expression;
 
         // We now need to parse the right-hand side of the expression
-        int rightValue = 0;
+        int rightValue = 0, errorCode = parseNext(expression, rightValue);
 
-        // Skip any leading spaces
-        while (*expression == ' ') {
-            ++expression; // Move to the next character
-        }
-
-        // If the current character is an opening parenthesis, we need to parse the expression inside it.
-        if (*expression == '(') parseParen(expression, result); // Parse the expression inside parentheses
-        // If we encounter a closing parenthesis without a matching opening one, it's an error
-        else if (*expression == ')') return ERROR::UNMATCHED_PAREN; // Closing parenthesis without matching opening
-        // If the current character is not a digit or a parethesis, it must be an invalid operator or character
-        else if (*expression < '0' || *expression > '9') return ERROR::INVALID_CHARACTER; // Invalid character in expression
-        else {
-            // Parse the number
-            int val = 0;
-
-            // This loop will parse the digits of the number, ensuring we handle multi-digit numbers correctly
-            while (*expression >= '0' && *expression <= '9') val = val * 10 + (*expression++ - '0');
-
-            // After parsing the number, we set the leftValue to the value with the correct sign
-            rightValue = val;
-        }
+        // If there was an error parsing the right-hand side, return it
+        if (errorCode) return errorCode;
 
         // Now we can perform the operation on the left and right values
         // We will handle multiplication and division first, as they have higher precedence
@@ -191,9 +209,7 @@ int parse(const char*& expression, int& result) {
             }
 
             // After handling multiplication or division, we need to check for the next operator
-            while (*expression == ' ') {
-                ++expression; // Move to the next character
-            }
+            skipSpaces(expression);
             operation = *expression;
 
             // If the next operation is not a valid operator, we break out of the loop
@@ -202,27 +218,11 @@ int parse(const char*& expression, int& result) {
             // If we reach here, we have a valid operator, so we move to the next character
             ++expression;
 
-            // Skip any leading spaces
-            while (*expression == ' ') {
-                ++expression; // Move to the next character
-            }
+            // We now need to parse the next right-hand side value
+            errorCode = parseNext(expression, rightValue);
 
-            // If the current character is an opening parenthesis, we need to parse the expression inside it.
-            if (*expression == '(') parseParen(expression, result); // Parse the expression inside parentheses
-            // If we encounter a closing parenthesis without a matching opening one, it's an error
-            else if (*expression == ')') return ERROR::UNMATCHED_PAREN; // Closing parenthesis without matching opening
-            // If the current character is not a digit or a parethesis, it must be an invalid operator or character
-            else if (*expression < '0' || *expression > '9') return ERROR::INVALID_CHARACTER; // Invalid character in expression
-            else {
-                // Parse the number
-                int val = 0;
-
-                // This loop will parse the digits of the number, ensuring we handle multi-digit numbers correctly
-                while (*expression >= '0' && *expression <= '9') val = val * 10 + (*expression++ - '0');
-
-                // After parsing the number, we set the leftValue to the value with the correct sign
-                rightValue = val;
-            }
+            // If there was an error parsing the next right-hand side value, return it
+            if (errorCode) return errorCode;
         }
 
         // Now we handle addition and subtraction, which have lower precedence
@@ -257,8 +257,16 @@ int evaluate(const char* expression, int& result)
     }
 	// We now have a non-space character to start with
 
-	// TO DO: Implement the actual evaluation logic
+    // Use parse() to parse the expression
+    errorCode = parse(exprPtr, result);
+    if (errorCode != ERROR::SUCCESS) return errorCode; // Return the error code from parsing
 
-	// If we reach here, the expression was successfully evaluated
-	return ERROR::SUCCESS;
+    // After parsing the entire expression, we should skip any remaining spaces
+    skipSpaces(expression);
+
+    // If there are any characters left in the expression after parsing, it's an error
+    if (*exprPtr != '\0') return ERROR::PARSE_ERROR;
+
+    // If we reach here, the expression was successfully evaluated
+    return ERROR::SUCCESS;
 }
