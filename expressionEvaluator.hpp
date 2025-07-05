@@ -10,6 +10,10 @@
 #define EXPRESSION_EVALUATOR_HPP
 #endif
 
+// This function checks if the expression is valid.
+// It should return true if the expression is valid and false otherwise.
+int isValidExpression(const char* expression);
+
 // This function evaluates the expression and returns the result in 'result'.
 // It returns true if the expression is valid and false otherwise.
 int evaluate(const char* expression, int& result);
