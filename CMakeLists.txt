@@ -28,3 +28,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CMAKE_BUILD_TYPE} ${CMAKE_BINARY_DIR}/bin/$
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BINARY_DIR}/bin/${CMAKE_CONFIGURATION_TYPES})
 # Set the output directories for the build configurations
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CMAKE_BUILD_TYPE}_${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}_${CMAKE_CONFIGURATION_TYPES})
+
+# Enable ctest support
+enable_testing()
+
+# add the tests subdirectory
+add_subdirectory(tests)

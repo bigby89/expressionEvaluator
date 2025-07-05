@@ -19,4 +19,5 @@ int evaluate(const char* expression, int& result)
     // parse the expression
 
 	// If we reach here, the expression was successfully evaluated
+	return 0; // Success
 }
